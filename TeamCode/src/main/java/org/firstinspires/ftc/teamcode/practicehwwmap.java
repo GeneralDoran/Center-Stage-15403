@@ -1,11 +1,9 @@
-package org.firstinspires.ftc.teamcode.Programs;
+package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.Servo;
 
-public class babyhwmap extends HardwareMapUtil {
+public class practicehwwmap extends HardwareMapUtil {
     HardwareMap hwmap = null;
 
     public DcMotor leftfrontDrive = null;
@@ -16,10 +14,10 @@ public class babyhwmap extends HardwareMapUtil {
 
     public DcMotor rightbackDrive = null;
 
-    public DcMotor armMotorOne = null;
-    public DcMotor armMotorTwo = null;
-    public CRServo armServo = null;
-    public Servo posServo = null;
+    public DcMotor linearActuator = null;
+
+
+    public CRServo theServo = null;
 
 
     public void init(HardwareMap ahwMap){
@@ -28,21 +26,14 @@ public class babyhwmap extends HardwareMapUtil {
         rightfrontDrive = HardwareInitMotor("rfD", false);
         leftbackDrive = HardwareInitMotor("lbD", true);
         rightbackDrive = HardwareInitMotor("rbD", false);
-        armMotorOne = HardwareInitMotor("arm_1", true);
-        armMotorTwo = HardwareInitMotor("arm_2", true);
-        armServo = hwMap.get(CRServo.class, "servo");
-        posServo = hwMap.get(Servo.class, "posServo");
-
-
-        armServo.setDirection(DcMotorSimple.Direction.FORWARD);
+        linearActuator = HardwareInitMotor("lA", true);
+        theServo = hwMap.get(CRServo.class, "the");
 
         leftfrontDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rightfrontDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         leftbackDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rightbackDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        armMotorOne.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        armMotorTwo.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
+        linearActuator.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
 
 
