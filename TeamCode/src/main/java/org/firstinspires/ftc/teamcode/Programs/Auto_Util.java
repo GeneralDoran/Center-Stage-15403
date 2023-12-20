@@ -1,7 +1,16 @@
 package org.firstinspires.ftc.teamcode;
+import android.graphics.Color;
+import static android.graphics.Color.blue;
+import static android.graphics.Color.green;
+import static android.graphics.Color.red;
+
+//import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaBase.MM_PER_INCH;
 
 import android.graphics.Bitmap;
+import android.graphics.ImageFormat;
 import android.os.Handler;
+
+import androidx.annotation.NonNull;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
@@ -10,28 +19,50 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.RobotLog;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
+import org.firstinspires.ftc.robotcore.external.android.util.Size;
+import org.firstinspires.ftc.robotcore.external.function.Consumer;
+import org.firstinspires.ftc.robotcore.external.function.Continuation;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.Camera;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraCaptureRequest;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraCaptureSequenceId;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraCaptureSession;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraCharacteristics;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraException;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraFrame;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraManager;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
+import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
-//import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
+/*
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
+*/
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
 import org.firstinspires.ftc.robotcore.internal.collections.EvictingBlockingQueue;
+import org.firstinspires.ftc.robotcore.internal.network.CallbackLooper;
+import org.firstinspires.ftc.robotcore.internal.system.ContinuationSynchronizer;
+import org.firstinspires.ftc.robotcore.internal.system.Deadline;
 
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 @TeleOp(name="Auto_Util", group="abstract")
 @Disabled
-public abstract class
-Auto_Util extends LinearOpMode {
+public abstract class Auto_Util extends LinearOpMode {
     /*
     ___________________________________________________________________________________________________________________________________
     -
@@ -72,7 +103,7 @@ Auto_Util extends LinearOpMode {
     //odometry encoders
     DcMotor verticalLeft, verticalRight, horizontal;
     //servos
-   // Servo servo1;
+    // Servo servo1;
     CRServo intakeServo, crservo2;
     ElapsedTime runtime = new ElapsedTime();
     BNO055IMU imu;
@@ -98,7 +129,7 @@ Auto_Util extends LinearOpMode {
     private static final String VUFORIA_KEY =
             "ATcQ9Jb/////AAABmXGJFOKC40g7kfOPBw8DjTpDq86FQe6MiHxC08OsCToNqw+fKiT29mM/lfoeeV88sikFGdia+F+WuD6Dm/Du3Ob+nWnN7gJCIwR+tO+qWxAguajBRQ2pxo7tODCvhYzof/ltTNRdFNNvSl82rRW+OLaI4/mn512YZfs3wNA0/hjZM5tUtsSHKKNigaAnY7QhSI9o8Wig8jtIbl6uKHyNiy8WYIjdJW2tfpwJa+jRskvcm2Eck6xPg1MfBHZzMefB9jYl/Sect6savpkYvRLIsfa16/rD7YDnR5vJVt7RVw+g1axFH3iYV1DlqxNRDgRvAO1HryGCABQUyS8h5hWGOu61S0ArgAqLQoFW38R0eJpg";
 
-            //"AYSaE87/////AAABmd4MI42q9kBngeU2bY+LVZJDc/gsy7wMwK3XXPjV+w2c4E3gtwueNUhCeDOIXgW1qP0yVp+ZvTxaTspl7CXq3ogA6ZUIqqLep9WvnAF5xLF7KIZOITXPRKcAPeK3O6o7gazhB0RdNpZKTavtq2TAV/D9LME20zAAZcwoSVRGzmFmnhS3TDsaWMtC+kWQDLh+cOlqB/SoTzsg07av6GLyNlz2PxkZnVhPqMHaDjeYdOrgTzT8KqG8XtC9GtC7tuBbC8+bE8zBExb2ToydJ4BLFKhG38Tms8oCNoGYUs1j3h3reNN1Obx74RtWqGSxTVcvml0mB0XsnAChPKoGt7WFzWrNLwEZ1BJ2jDkzjNYaIfow";
+    //"AYSaE87/////AAABmd4MI42q9kBngeU2bY+LVZJDc/gsy7wMwK3XXPjV+w2c4E3gtwueNUhCeDOIXgW1qP0yVp+ZvTxaTspl7CXq3ogA6ZUIqqLep9WvnAF5xLF7KIZOITXPRKcAPeK3O6o7gazhB0RdNpZKTavtq2TAV/D9LME20zAAZcwoSVRGzmFmnhS3TDsaWMtC+kWQDLh+cOlqB/SoTzsg07av6GLyNlz2PxkZnVhPqMHaDjeYdOrgTzT8KqG8XtC9GtC7tuBbC8+bE8zBExb2ToydJ4BLFKhG38Tms8oCNoGYUs1j3h3reNN1Obx74RtWqGSxTVcvml0mB0XsnAChPKoGt7WFzWrNLwEZ1BJ2jDkzjNYaIfow";
     //private VuforiaLocalizer vuforia;
     private TFObjectDetector tfod;
     //Color Sensors
@@ -150,7 +181,7 @@ Auto_Util extends LinearOpMode {
     String targetName           = "";
     private TFObjectDetector tfod;
      */
-    
+
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -167,15 +198,15 @@ Auto_Util extends LinearOpMode {
      */
     public void initAuto() {
         initDriveHardwareMap(rfName, rbName, lfName, lbName);
-       // initUtilHardwareMap(util1name, util2name);
-        //initServoHardwareMap(intakeServoname);
+        initUtilHardwareMap(util1name, util2name);
+        initServoHardwareMap(intakeServoname);
         //IMU Stuff, sets up parameters and reports accelerations to logcat log
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
         parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
         parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
         parameters.calibrationDataFile = "BNO055IMUCalibration.json"; // see the calibration sample opmodeaz
-     //   imu = hardwareMap.get(BNO055IMU.class, "imu");
-       // imu.initialize(parameters);
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
+        imu.initialize(parameters);
 
         //Used in Color Alignment
         /*
@@ -227,10 +258,10 @@ Auto_Util extends LinearOpMode {
     }
 
     private void initUtilHardwareMap(String slide1, String slide2) {
-        slideMotor = hardwareMap.dcMotor.get(slide1);
-        slideMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        slideMotor2 = hardwareMap.dcMotor.get(slide2);
-        slideMotor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        //slideMotor = hardwareMap.dcMotor.get(slide1);
+        //slideMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        //slideMotor2 = hardwareMap.dcMotor.get(slide2);
+        //slideMotor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         /*
         utilmotor3 = hardwareMap.dcMotor.get(util3name);
         utilmotor3.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -238,12 +269,12 @@ Auto_Util extends LinearOpMode {
         utilmotor4.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
          */
-        slideMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        slideMotor.setDirection(DcMotor.Direction.FORWARD);
-        slideMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        slideMotor2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        slideMotor2.setDirection(DcMotor.Direction.FORWARD);
-        slideMotor2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+       // slideMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        //slideMotor.setDirection(DcMotor.Direction.FORWARD);
+        //slideMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        //slideMotor2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        //slideMotor2.setDirection(DcMotor.Direction.FORWARD);
+        //slideMotor2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         /*
         utilmotor3.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         utilmotor3.setDirection(DcMotor.Direction.FORWARD);
@@ -259,9 +290,9 @@ Auto_Util extends LinearOpMode {
     private void initServoHardwareMap(String crservo1name) {
         //servo1 = hardwareMap.servo.get(servo1name);
         //servo1.setPosition(0);
-        intakeServo = hardwareMap.crservo.get(crservo1name);
-        intakeServo.setDirection(CRServo.Direction.FORWARD);
-        intakeServo.setPower(0);
+        //intakeServo = hardwareMap.crservo.get(crservo1name);
+        //intakeServo.setDirection(CRServo.Direction.FORWARD);
+        //intakeServo.setPower(0);
         //crservo2 = hardwareMap.crservo.get(crservo2name);
         //crservo2.setDirection(CRServo.Direction.FORWARD);
         //crservo2.setPower(0);
@@ -469,7 +500,7 @@ Auto_Util extends LinearOpMode {
             sleep(100);
         }
     }
-/*
+
     public void encoderLift(double speed, double liftInches,  double timeoutS, double desiredHeading){
         int heightTarget;
         //int averageTarget;
@@ -497,8 +528,6 @@ Auto_Util extends LinearOpMode {
             slideMotor.setPower((liftSpeed));
             slideMotor2.setPower((liftSpeed * -1));
 
- */
-/*
 
 
             //prints the desired position and actual position of all four motors
@@ -524,7 +553,7 @@ Auto_Util extends LinearOpMode {
             slideMotor2.setPower(0);
             sleep(100);
         }
-    }*/
+    }
 
     public void resetMotorEncoders() {
         leftfrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -537,7 +566,7 @@ Auto_Util extends LinearOpMode {
         rightbackDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         rightfrontDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
-/*
+
     public void resetSlideEncoders() {
         try {
             slideMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -551,7 +580,7 @@ Auto_Util extends LinearOpMode {
                 telemetry.update();
             }
         }
-    }*/
+    }
 
     /*
     ___________________________________________________________________________________________________________________________________
@@ -807,9 +836,9 @@ Auto_Util extends LinearOpMode {
         /** YUY2 is supported by all Webcams, per the USB Webcam standard: See "USB Device Class Definition
          * for Video Devices: Uncompressed Payload, Table 2-1". Further, often this is the *only*
          * image format supported by a camera */
-        //final int imageFormat = ImageFormat.YUY2;
+    //final int imageFormat = ImageFormat.YUY2;
 
-        /** Verify that the image is supported, and fetch size and desired frame rate if so */
+    /** Verify that the image is supported, and fetch size and desired frame rate if so */
         /*
         CameraCharacteristics cameraCharacteristics = cameraName.getCameraCharacteristics();
         if (!contains(cameraCharacteristics.getAndroidFormats(), imageFormat)) {
@@ -1149,7 +1178,7 @@ Auto_Util extends LinearOpMode {
         leftbackDrive.setPower(0);
     }
 
-/*
+
     public void slideLift(double time){
         runtime.reset();
         while(runtime.seconds() < time){
@@ -1168,7 +1197,7 @@ Auto_Util extends LinearOpMode {
         }
         slideMotor.setPower(0);
         slideMotor.setPower(0);
-    }*/
+    }
 
 
 
@@ -1245,13 +1274,13 @@ Auto_Util extends LinearOpMode {
         tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
         telemetry.addData("eat more bread", "tfod");
         telemetry.update();
-       // tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABEL_FIRST_ELEMENT, LABEL_SECOND_ELEMENT, LABEL_THIRD_ELEMENT);
+        // tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABEL_FIRST_ELEMENT, LABEL_SECOND_ELEMENT, LABEL_THIRD_ELEMENT);
         tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABELS);
     }
 
 
-
 */
+
 
         /*
     ___________________________________________________________________________________________________________________________________

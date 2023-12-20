@@ -1,14 +1,11 @@
-package org.firstinspires.ftc.teamcode;
-import com.qualcomm.hardware.bosch.BNO055IMU;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+package org.firstinspires.ftc.teamcode.Programs;
 import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.util.ElapsedTime;
-public class practicehwwmap extends HardwareMapUtil{
+
+import org.firstinspires.ftc.teamcode.Programs.HardwareMapUtil;
+
+public class practicehwwmap extends HardwareMapUtil {
     HardwareMap hwmap = null;
 
     public DcMotor leftfrontDrive = null;

@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.Programs;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -32,6 +32,7 @@ public class babyhwmap extends HardwareMapUtil {
         armMotorTwo = HardwareInitMotor("arm_2", true);
         armServo = hwMap.get(CRServo.class, "servo");
         posServo = hwMap.get(Servo.class, "posServo");
+
 
         armServo.setDirection(DcMotorSimple.Direction.FORWARD);
 
