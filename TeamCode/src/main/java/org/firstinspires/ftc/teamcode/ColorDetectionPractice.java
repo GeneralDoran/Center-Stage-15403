@@ -62,9 +62,28 @@ class SamplePipeline extends OpenCvPipeline {
     Mat HSV = new Mat();
     Mat HSV1 = new Mat();
     Mat HSV2 = new Mat();
+    Mat HSV3 = new Mat();
+    Mat SubMat1 = new Mat();
+    Mat SubMat2 = new Mat();
+    Mat SubMat3 = new Mat();
     Mat Y = new Mat();
-    int avg;
+    int avg1,avg2,avg3;
     Scalar lowerBound, upperBound;
+    boolean identifyRedAndBlue = true;
+    static final int STREAM_WIDTH = 1920; // modify for your camera
+    static final int STREAM_HEIGHT = 1080; // modify for your camera
+    static final int WidthRect = 130;
+    static final int HeightRect = 110;
+
+    //SubMat1 = HSV.submat(new Rect(0,0,630,1080));
+    //SubMat2 = HSV.submat(new Rect(640,0,630,1080));
+    //SubMat3 = HSV.submat(new Rect(1280,0,630,1080));
+    Point LeftTopCorner = new Point(0,500);
+    Point LeftBottomCorner = new Point(630,1079);
+    Point CenterTopCorner = new Point(640,500);
+    Point CenterBottomCorner = new Point(1270,1079);
+    Point RightTopCorner = new Point(1280,500);
+    Point RightBottomCorner = new Point(1910,1079);
 
 
     /*
@@ -75,28 +94,30 @@ class SamplePipeline extends OpenCvPipeline {
         //Convert to HSV
         Imgproc.cvtColor(input, HSV, Imgproc.COLOR_RGB2HSV);
 
-        //Blur images to remove sensor noise
-        //Imgproc.blur(input,HSV,new Size(3,3));
 
-        //Create Kernel Structuring Element
-        //Mat Kernel = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE,new Size(3,3));
-        //Erode
-        //Imgproc.erode(input,HSV,Kernel);
-        //Dilate
-        //Imgproc.dilate(input,HSV,Kernel);
+        if(identifyRedAndBlue){
+            //Get red pixels(hue >0)
+            lowerBound = new Scalar(0d,100d,100d);
+            upperBound = new Scalar(10d,255d,255d);
+            Core.inRange(HSV,lowerBound,upperBound,HSV1);
 
-        //Get red pixels(hue >0)
-        lowerBound = new Scalar(0,100,100);
-        upperBound = new Scalar(10,255,255);
-        Core.inRange(input,lowerBound,upperBound,HSV1);
 
-        //Get red pixels (hue < 180)
-        lowerBound = new Scalar(160,100,100);
-        upperBound = new Scalar(179,255,255);
-        Core.inRange(input,lowerBound,upperBound,HSV2);
+            //Get red pixels (hue < 180)
+            lowerBound = new Scalar(160,100,100);
+            upperBound = new Scalar(179,255,255);
+            Core.inRange(HSV,lowerBound,upperBound,HSV2);
 
-        //Combine binary images to get all red pixels
-        Core.add(HSV1,HSV2,HSV);
+            //Get Blue Pixels
+            lowerBound = new Scalar(100,90,90);
+            upperBound = new Scalar(130,255,255);
+            Core.inRange(HSV,lowerBound,upperBound,HSV3);
+
+            //Combine binary images to get all red pixels
+            Core.add(HSV1,HSV2,HSV);
+            Core.add(HSV,HSV3,HSV);
+
+        }
+
 
         //ArrayList<Mat> HSVChannels = new ArrayList<Mat>(3);
         //Core.split(HSV, HSVChannels);
@@ -114,16 +135,45 @@ class SamplePipeline extends OpenCvPipeline {
     public Mat processFrame(Mat input) {
         inputToBinary(input);
         System.out.println("processing requested");
-        //avg = (int) Core.mean(Y).val[0];
-        //HSV.release(); // don't leak memory!
+
+        //Release The Matrices
         HSV1.release(); // don't leak memory!
         HSV2.release(); // don't leak memory!
+        HSV3.release(); // don't leak memory!
         Y.release(); // don't leak memory!
-        if(HSV == null){HSV.release();return input;}
-        else{return HSV;}
+
+        //Create Sub-matrix to analyze separate parts of the image
+        SubMat1 = HSV.submat(new Rect(LeftTopCorner,LeftBottomCorner));
+        SubMat2 = HSV.submat(new Rect(CenterTopCorner,CenterBottomCorner));
+        SubMat3 = HSV.submat(new Rect(RightTopCorner,RightBottomCorner));
+
+        //Get the Average Brightness from Each Sub-matrix
+        avg1 = (int) Core.mean(SubMat1).val[0];
+        avg2 = (int) Core.mean(SubMat2).val[0];
+        avg3 = (int) Core.mean(SubMat3).val[0];
+
+        //Release the Sub-mats
+        SubMat1.release();
+        SubMat2.release();
+        SubMat3.release();
+
+        //Draw the Rectangles on the screen
+        Imgproc.rectangle( // rings
+                HSV, // Buffer to draw on
+                LeftTopCorner, // First point which defines the rectangle
+                LeftBottomCorner, // Second point which defines the rectangle
+                new Scalar(0,0,255), // The color the rectangle is drawn in
+                5); // Thickness of the rectangle lines
+        Imgproc.rectangle(HSV, CenterTopCorner, CenterBottomCorner, new Scalar(0,0,255),5);
+        Imgproc.rectangle(HSV, RightTopCorner, RightBottomCorner, new Scalar(0,0,255),5);
+        return HSV;
     }
 
-    public int getAnalysis() {
-        return avg;
+    public String getAnalysis() {
+        /*Determines which rectangle has the Team Object within its boundaries*/
+        if((avg1 >avg2)&&(avg1>avg3)){return "Left";}
+        if((avg2 >avg1)&&(avg2>avg3)){return "Center";}
+        if((avg3 >avg2)&&(avg3>avg1)){return "Right";}
+        return "ErrorInAnalysis";
     }
 }
