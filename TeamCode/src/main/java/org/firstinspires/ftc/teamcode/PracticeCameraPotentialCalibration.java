@@ -149,7 +149,14 @@ public class PracticeCameraPotentialCalibration extends LinearOpMode {
                 else
                 {place = "Right";}
                 // Add a tag to the AprilTagLibrary.Builder.
-                aprilTagLibraryBuilder.addTag(new AprilTagMetadata((a*3)+(s), alliance+" Alliance "+place+" ", 0.166, DistanceUnit.METER));
+                aprilTagLibraryBuilder.addTag(
+                        new AprilTagMetadata(
+                                (a*3)+(s),
+                                alliance+" Alliance "+place+" ",
+                                0.166,
+                                DistanceUnit.METER
+                        )
+                );
             }
         }
 

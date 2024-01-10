@@ -37,12 +37,15 @@ public class ColorDetectionPractice extends OpMode {
             public void onOpened()
             {
                 webcam.startStreaming(STREAM_WIDTH, STREAM_HEIGHT, OpenCvCameraRotation.UPRIGHT);
+                telemetry.addData("Image Analysis:",pipeline.getAnalysis());
+                telemetry.update();
             }
 
             @Override
             public void onError(int errorCode) {
                 telemetry.addData("Camera Failed","");
                 telemetry.update();
+                //webcam.stopStreaming();
             }
         });
 
@@ -74,18 +77,32 @@ class SamplePipeline extends OpenCvPipeline {
     static final int STREAM_HEIGHT = 1080; // modify for your camera
     static final int WidthRect = 130;
     static final int HeightRect = 110;
+    static final double HeightRatio = (2.5/6.5);
+    static double CheckHeight =(STREAM_HEIGHT-(STREAM_HEIGHT*HeightRatio));
 
+
+    //3.5/5.4 left far
+    //2.5/6.5 up
     //SubMat1 = HSV.submat(new Rect(0,0,630,1080));
     //SubMat2 = HSV.submat(new Rect(640,0,630,1080));
     //SubMat3 = HSV.submat(new Rect(1280,0,630,1080));
-    Point LeftTopCorner = new Point(0,500);
-    Point LeftBottomCorner = new Point(630,1079);
-    Point CenterTopCorner = new Point(640,500);
-    Point CenterBottomCorner = new Point(1270,1079);
-    Point RightTopCorner = new Point(1280,500);
-    Point RightBottomCorner = new Point(1910,1079);
+    Point LeftTopCorner = new Point(0,CheckHeight-1);
+    Point LeftBottomCorner = new Point((STREAM_WIDTH/3)-10,STREAM_HEIGHT-1);
+    Point CenterTopCorner = new Point(STREAM_WIDTH/3,CheckHeight-1);
+    Point CenterBottomCorner = new Point(((STREAM_WIDTH/3)*2)-10,STREAM_HEIGHT-1);
+    Point RightTopCorner = new Point((STREAM_WIDTH/3)*2,CheckHeight);
+    Point RightBottomCorner = new Point(STREAM_WIDTH-10,STREAM_HEIGHT-1);
 
+    void openCVPointInitialization(int streamWidth,int streamHeight, double heightRatio, double widthRatio){
+        double CheckHeight =(streamHeight-(streamHeight*heightRatio));
 
+        LeftTopCorner = new Point(0,CheckHeight-1);
+        LeftBottomCorner = new Point((streamWidth/3)-10,streamHeight-1);
+        CenterTopCorner = new Point(streamWidth/3,CheckHeight-1);
+        CenterBottomCorner = new Point(((streamWidth/3)*2)-10,streamHeight-1);
+        RightTopCorner = new Point((streamWidth/3)*2,CheckHeight);
+        RightBottomCorner = new Point(streamWidth-10,streamHeight-1);
+    }
     /*
      * This function takes the RGB frame, converts to YCrCb,
      * and extracts the Y channel to the 'Y' variable
@@ -93,7 +110,6 @@ class SamplePipeline extends OpenCvPipeline {
     void inputToBinary(Mat input) {
         //Convert to HSV
         Imgproc.cvtColor(input, HSV, Imgproc.COLOR_RGB2HSV);
-
 
         if(identifyRedAndBlue){
             //Get red pixels(hue >0)
@@ -117,13 +133,6 @@ class SamplePipeline extends OpenCvPipeline {
             Core.add(HSV,HSV3,HSV);
 
         }
-
-
-        //ArrayList<Mat> HSVChannels = new ArrayList<Mat>(3);
-        //Core.split(HSV, HSVChannels);
-        //Y = HSVChannels.get(0);
-
-
     }
 
     @Override
@@ -162,18 +171,18 @@ class SamplePipeline extends OpenCvPipeline {
                 HSV, // Buffer to draw on
                 LeftTopCorner, // First point which defines the rectangle
                 LeftBottomCorner, // Second point which defines the rectangle
-                new Scalar(0,0,255), // The color the rectangle is drawn in
-                5); // Thickness of the rectangle lines
-        Imgproc.rectangle(HSV, CenterTopCorner, CenterBottomCorner, new Scalar(0,0,255),5);
-        Imgproc.rectangle(HSV, RightTopCorner, RightBottomCorner, new Scalar(0,0,255),5);
+                new Scalar(100,100,255), // The color the rectangle is drawn in
+                50); // Thickness of the rectangle lines
+        Imgproc.rectangle(HSV, CenterTopCorner, CenterBottomCorner, new Scalar(100,100,255),50);
+        Imgproc.rectangle(HSV, RightTopCorner, RightBottomCorner, new Scalar(100,100,255),50);
         return HSV;
     }
 
     public String getAnalysis() {
         /*Determines which rectangle has the Team Object within its boundaries*/
-        if((avg1 >avg2)&&(avg1>avg3)){return "Left";}
-        if((avg2 >avg1)&&(avg2>avg3)){return "Center";}
-        if((avg3 >avg2)&&(avg3>avg1)){return "Right";}
+        if((avg1 >avg2)&&(avg1>avg3)){return "Left:   "+avg1;}
+        if((avg2 >avg1)&&(avg2>avg3)){return "Center:    "+avg2;}
+        if((avg3 >avg2)&&(avg3>avg1)){return "Right:   "+avg3;}
         return "ErrorInAnalysis";
     }
 }
